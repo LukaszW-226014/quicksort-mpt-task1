@@ -3,5 +3,4 @@ project(quicksort_mpt_task1)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(quicksort_mpt_task1
-        quick_1_c.cpp)
+add_executable(quicksort_mpt_task1 quicksort.cpp)
