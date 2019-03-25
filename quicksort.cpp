@@ -1,7 +1,3 @@
-//
-// Created by Łukasz Wójcik on 2019-03-24.
-//
-
 #include <iostream>
 #include <fstream>
 
@@ -15,6 +11,49 @@ using namespace std;
 #define RANDOM_OUTPUT_PREFIX "random_output_"
 #define EXTENSION ".txt"
 #define AMOUNT_OF_NUMBERS 10000000
+#define FIRST_PIVOT 1
+#define LAST_PIVOT 2
+#define MID_PIVOT 3
+
+void quickSort(int *arr, int left, int right, int pivotChoice) {
+
+    int i = left, j = right;
+    int tmp;
+    int pivot;
+
+    // pivot choice
+    switch (pivotChoice) {
+        case 1 :
+            pivot = arr[left];
+            break;
+        case 2 :
+            pivot = arr[right];
+            break;
+        default :
+            pivot = arr[(left + right) / 2];
+    }
+
+    // partition
+    while (i <= j) {
+        while (arr[i] < pivot)
+            i++;
+        while (arr[j] > pivot)
+            j--;
+        if (i <= j) {
+            tmp = arr[i];
+            arr[i] = arr[j];
+            arr[j] = tmp;
+            i++;
+            j--;
+        }
+    };
+
+    // recursion
+    if (left < j)
+        quickSort(arr, left, j, pivot);
+    if (i < right)
+        quickSort(arr, i, right, pivot);
+}
 
 const std::string currentDateTime() {
     time_t now = time(nullptr);
@@ -24,65 +63,6 @@ const std::string currentDateTime() {
     strftime(buf, sizeof(buf), "%Y-%m-%d||%X", &tstruct);
 
     return buf;
-}
-
-template<typename Iter, typename Compare>
-pair<Iter, Iter> quickSortPartition(Iter first, Iter last, Compare compare) {
-    Iter ll = first + ((last - first) / 2), le = ll + 1, lg = le, lu = ll;
-    while (lg != last) {
-        if (compare(*lg, *ll)) {
-            swap(*lg, *le);
-            swap(*le, *ll);
-            ++ll;
-            ++le;
-        } else if (compare(*ll, *lg)) {
-        } else {
-            swap(*lg, *le);
-            ++le;
-        }
-        ++lg;
-    }
-    while (lu != first) {
-        --lu;
-        if (compare(*lu, *ll)) {
-        } else if (compare(*ll, *lu)) {
-            --le;
-            --ll;
-            swap(*lu, *ll);
-            swap(*ll, *le);
-        } else {
-            --ll;
-            swap(*lu, *ll);
-        }
-    }
-
-    return std::make_pair(ll, le);
-}
-
-// Sortowanie z wlasna funkcja porownujaca.
-template<typename Iter, typename Compare>
-void quickSort(Iter first, Iter last, Compare compare) {
-    if (last - first < 2) {
-        return;
-    }
-    while (1 < last - first) {
-        pair<Iter, Iter> div = quickSortPartition(first, last, compare);
-        if (div.first - first < last - div.second) {
-            // Petla kontynuuje prace na drugiej czesci.
-            quickSort(first, div.first, compare);
-            first = div.second;
-        } else {
-            // Petla kontynuuje prace na pierwszej czesci.
-            quickSort(div.second, last, compare);
-            last = div.first;
-        }
-    }
-}
-
-// Sortowanie z uzyciem operatora '<'.
-template<typename Iter>
-void quickSort(Iter first, Iter last) {
-    return quickSort(first, last, less<typename iterator_traits<Iter>::value_type>());
 }
 
 void saveInputToFile(int *array, int numbersAmount, string inputFilePrefix) {
@@ -127,8 +107,7 @@ void saveOutputToFile(int *array, int numbersAmount, string outputFilePrefix) {
 
 int *createOptimisticArray(int numbersAmount) {
     int *array = new int[numbersAmount];
-    for (int i = 0; i < numbersAmount; i++) // wczytywanie liczb do tablicy
-    {
+    for (int i = 0; i < numbersAmount; i++) {
         array[i] = i;
     }
     return array;
@@ -136,8 +115,7 @@ int *createOptimisticArray(int numbersAmount) {
 
 int *createPessimisticArray(int numbersAmount) {
     int *array = new int[numbersAmount];
-    for (int i = 0; i < numbersAmount; i++) // wczytywanie liczb do tablicy
-    {
+    for (int i = 0; i < numbersAmount; i++) {
         array[i] = numbersAmount - i;
     }
     return array;
@@ -146,25 +124,30 @@ int *createPessimisticArray(int numbersAmount) {
 int *createRandomArray(int numbersAmount) {
     int *array = new int[numbersAmount];
     srand((unsigned) time(nullptr));
-    for (int i = 0; i < numbersAmount; i++) // wczytywanie liczb do tablicy
-    {
+    for (int i = 0; i < numbersAmount; i++) {
         array[i] = rand() % (numbersAmount / 100);
     }
     return array;
 }
 
-auto measureTimeExecution(int *array, int numbersAmount) {
+auto measureTimeExecution(int *array, int numbersAmount, int pivotChoice) {
     chrono::high_resolution_clock::time_point startTime = chrono::high_resolution_clock::now();
-    quickSort(array, array + numbersAmount);
+    quickSort(array, 0, numbersAmount - 1, pivotChoice);
     chrono::high_resolution_clock::time_point finishTime = chrono::high_resolution_clock::now();
 
     return chrono::duration_cast<chrono::milliseconds>(finishTime - startTime).count();
 }
 
+void execute(int *optimisticArray, int *pessimisticArray, int *randomArray, int numbersAmount, int pivotChoice) {
+    cout << "Optimistic (milisec): " << measureTimeExecution(optimisticArray, AMOUNT_OF_NUMBERS, pivotChoice) << endl;
+    //saveOutputToFile(optimisticArray, AMOUNT_OF_NUMBERS, OPTIMISTIC_OUTPUT_PREFIX);
+    cout << "Pessimistic (milisec): " << measureTimeExecution(pessimisticArray, AMOUNT_OF_NUMBERS, pivotChoice) << endl;
+    //saveOutputToFile(pessimisticArray, AMOUNT_OF_NUMBERS, PESSIMISTIC_OUTPUT_PREFIX);
+    cout << "Random (milisec): " << measureTimeExecution(randomArray, AMOUNT_OF_NUMBERS, pivotChoice) << endl;
+    //saveOutputToFile(randomArray, AMOUNT_OF_NUMBERS, RANDOM_OUTPUT_PREFIX);
+}
+
 int main() {
-//    int numbersAmount;
-//    cout << "Enter size of array: ";
-//    cin >> numbersAmount;
 
     int *optimisticArray = createOptimisticArray(AMOUNT_OF_NUMBERS);
     //saveInputToFile(optimisticArray, AMOUNT_OF_NUMBERS, OPTIMISTIC_INPUT_PREFIX);
@@ -173,15 +156,28 @@ int main() {
     int *randomArray = createRandomArray(AMOUNT_OF_NUMBERS);
     //saveInputToFile(randomArray, AMOUNT_OF_NUMBERS, RANDOM_INPUT_PREFIX);
 
+    int pivotChoice;
+    cout << "Choose pivot:\n1. First element\n2. Last element\n3. Middle element" << endl;
+    cin >> pivotChoice;
 
-    cout << "Optimistic (milisec): " << measureTimeExecution(optimisticArray, AMOUNT_OF_NUMBERS) << endl;
-    //saveOutputToFile(optimisticArray, AMOUNT_OF_NUMBERS, OPTIMISTIC_OUTPUT_PREFIX);
-    cout << "Pessimistic (milisec): " << measureTimeExecution(pessimisticArray, AMOUNT_OF_NUMBERS) << endl;
-    //saveOutputToFile(pessimisticArray, AMOUNT_OF_NUMBERS, PESSIMISTIC_OUTPUT_PREFIX);
-    cout << "Random (milisec): " << measureTimeExecution(randomArray, AMOUNT_OF_NUMBERS) << endl;
-    //saveOutputToFile(randomArray, AMOUNT_OF_NUMBERS, RANDOM_OUTPUT_PREFIX);
+    switch (pivotChoice) {
+        case 1 :
+            cout << "First element pivot results:" << endl;
+            execute(optimisticArray, pessimisticArray, randomArray, AMOUNT_OF_NUMBERS, FIRST_PIVOT);
+            break;
+        case 2 :
+            cout << "Last element pivot results:" << endl;
+            execute(optimisticArray, pessimisticArray, randomArray, AMOUNT_OF_NUMBERS, LAST_PIVOT);
+            break;
+        case 3 :
+            cout << "Middle element pivot results:" << endl;
+            execute(optimisticArray, pessimisticArray, randomArray, AMOUNT_OF_NUMBERS, MID_PIVOT);
+            break;
+        default :
+            cout << "Wrong choice!" << endl;
+    }
 
-    delete[] optimisticArray; // zwolnienie tablicy zaalokowanej dynamicznie
+    delete[] optimisticArray;
     delete[] pessimisticArray;
     delete[] randomArray;
 
