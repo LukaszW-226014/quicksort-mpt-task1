@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.13)
-project(clion_test)
+project(quicksort-mpt-task1)
 
 set(CMAKE_CXX_STANDARD 17)
 
-#add_executable(clion_test main.cpp)
+#add_executable(quicksort-mpt-task1 main.cpp)
 
-#add_executable(clion_test quick_c.cpp)
+#add_executable(quicksort-mpt-task1 quick_c.cpp)
 
-add_executable(clion_test quick_1_c.cpp)
+add_executable(quicksort-mpt-task1 quickSort.cpp)
 
-#add_executable(clion_test quicksort.cpp)
+#add_executable(quicksort-mpt-task1 quicksort.cpp)
