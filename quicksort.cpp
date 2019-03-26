@@ -10,49 +10,49 @@ using namespace std;
 #define PESSIMISTIC_OUTPUT_PREFIX "pessimistic_output_"
 #define RANDOM_OUTPUT_PREFIX "random_output_"
 #define EXTENSION ".txt"
-#define AMOUNT_OF_NUMBERS 10000000
+#define AMOUNT_OF_NUMBERS 100000
 #define FIRST_PIVOT 1
 #define LAST_PIVOT 2
 #define MID_PIVOT 3
 
-void quickSort(int *arr, int left, int right, int pivotChoice) {
+void swap(int *array, int i, int j) {
+    int temp = array[i];
+    array[i] = array[j];
+    array[j] = temp;
+}
 
-    int i = left, j = right;
-    int tmp;
-    int pivot;
-
-    // pivot choice
+int fetchPivotPoint(int left, int right, int pivotChoice) {
     switch (pivotChoice) {
         case 1 :
-            pivot = arr[left];
-            break;
+            return left;
         case 2 :
-            pivot = arr[right];
-            break;
+            return right;
         default :
-            pivot = arr[(left + right) / 2];
+            return (left + right) / 2;
     }
+}
 
-    // partition
-    while (i <= j) {
-        while (arr[i] < pivot)
-            i++;
-        while (arr[j] > pivot)
-            j--;
-        if (i <= j) {
-            tmp = arr[i];
-            arr[i] = arr[j];
-            arr[j] = tmp;
-            i++;
-            j--;
+int partition(int *array, int left, int right, int pivotChoice) {
+    int pivotPoint = fetchPivotPoint(left, right, pivotChoice);
+    int pivotValue = array[pivotPoint];
+    swap(array, pivotPoint, right);
+    int currentPosition = left - 1;
+    for (int i = left; i <= right - 1; i++) {
+        if (array[i] <= pivotValue) {
+            currentPosition++;
+            swap(array, currentPosition, i);
         }
-    };
+    }
+    swap(array, currentPosition + 1, right);
+    return currentPosition + 1;
+}
 
-    // recursion
-    if (left < j)
-        quickSort(arr, left, j, pivot);
-    if (i < right)
-        quickSort(arr, i, right, pivot);
+void quickSort(int *array, int left, int right, int pivotChoice) {
+    if (left < right) {
+        int i = partition(array, left, right, pivotChoice);
+        quickSort(array, left, i - 1, pivotChoice);
+        quickSort(array, i + 1, right, pivotChoice);
+    }
 }
 
 const std::string currentDateTime() {
@@ -61,7 +61,6 @@ const std::string currentDateTime() {
     char buf[80];
     tstruct = *localtime(&now);
     strftime(buf, sizeof(buf), "%Y-%m-%d||%X", &tstruct);
-
     return buf;
 }
 
@@ -69,16 +68,12 @@ void saveInputToFile(int *array, int numbersAmount, string inputFilePrefix) {
     string inputFileName =
             "/Volumes/SDXC/quick-sort-test-data/input/" + inputFilePrefix + currentDateTime() + EXTENSION;
     ofstream arrayInputData(inputFileName, ios::out | ios::app);
-
     if (arrayInputData.is_open()) {
         arrayInputData << "Array Data:" << endl;
-
         for (int i = 0; i < numbersAmount; i++) {
             arrayInputData << array[i] << " ";
         }
-
         arrayInputData.close();
-
         cout << "Copy input array to file done!" << endl;
     } else {
         cout << "Unable to open file!" << endl;
@@ -89,23 +84,19 @@ void saveOutputToFile(int *array, int numbersAmount, string outputFilePrefix) {
     string outputFileName =
             "/Volumes/SDXC/quick-sort-test-data/output/" + outputFilePrefix + currentDateTime() + EXTENSION;
     ofstream arrayOutputData(outputFileName, ios::out | ios::app);
-
     if (arrayOutputData.is_open()) {
         arrayOutputData << "Array Data:" << endl;
-
         for (int i = 0; i < numbersAmount; i++) {
             arrayOutputData << array[i] << " ";
         }
-
         arrayOutputData.close();
-
         cout << "Copy output array to file done!" << endl;
     } else {
         cout << "Unable to open file!" << endl;
     }
 }
 
-int *createOptimisticArray(int numbersAmount) {
+int *createAscendingSortedArray(int numbersAmount) {
     int *array = new int[numbersAmount];
     for (int i = 0; i < numbersAmount; i++) {
         array[i] = i;
@@ -113,7 +104,7 @@ int *createOptimisticArray(int numbersAmount) {
     return array;
 }
 
-int *createPessimisticArray(int numbersAmount) {
+int *createDescendingSortedArray(int numbersAmount) {
     int *array = new int[numbersAmount];
     for (int i = 0; i < numbersAmount; i++) {
         array[i] = numbersAmount - i;
@@ -125,7 +116,7 @@ int *createRandomArray(int numbersAmount) {
     int *array = new int[numbersAmount];
     srand((unsigned) time(nullptr));
     for (int i = 0; i < numbersAmount; i++) {
-        array[i] = rand() % (numbersAmount / 100);
+        array[i] = rand() % numbersAmount;
     }
     return array;
 }
@@ -134,25 +125,27 @@ auto measureTimeExecution(int *array, int numbersAmount, int pivotChoice) {
     chrono::high_resolution_clock::time_point startTime = chrono::high_resolution_clock::now();
     quickSort(array, 0, numbersAmount - 1, pivotChoice);
     chrono::high_resolution_clock::time_point finishTime = chrono::high_resolution_clock::now();
-
     return chrono::duration_cast<chrono::milliseconds>(finishTime - startTime).count();
 }
 
-void execute(int *optimisticArray, int *pessimisticArray, int *randomArray, int numbersAmount, int pivotChoice) {
-    cout << "Optimistic (milisec): " << measureTimeExecution(optimisticArray, AMOUNT_OF_NUMBERS, pivotChoice) << endl;
-    //saveOutputToFile(optimisticArray, AMOUNT_OF_NUMBERS, OPTIMISTIC_OUTPUT_PREFIX);
-    cout << "Pessimistic (milisec): " << measureTimeExecution(pessimisticArray, AMOUNT_OF_NUMBERS, pivotChoice) << endl;
-    //saveOutputToFile(pessimisticArray, AMOUNT_OF_NUMBERS, PESSIMISTIC_OUTPUT_PREFIX);
-    cout << "Random (milisec): " << measureTimeExecution(randomArray, AMOUNT_OF_NUMBERS, pivotChoice) << endl;
+void
+execute(int *ascendingSortedArray, int *descendingSortedArray, int *randomArray, int numbersAmount, int pivotChoice) {
+    cout << "Ascending sorted data (milisec): "
+         << measureTimeExecution(ascendingSortedArray, numbersAmount, pivotChoice) << endl;
+    //saveOutputToFile(ascendingSortedArray, AMOUNT_OF_NUMBERS, OPTIMISTIC_OUTPUT_PREFIX);
+    cout << "Descending sorted data (milisec): "
+         << measureTimeExecution(descendingSortedArray, numbersAmount, pivotChoice) << endl;
+    //saveOutputToFile(descendingSortedArray, AMOUNT_OF_NUMBERS, PESSIMISTIC_OUTPUT_PREFIX);
+    cout << "Random data (milisec): " << measureTimeExecution(randomArray, numbersAmount, pivotChoice) << endl;
     //saveOutputToFile(randomArray, AMOUNT_OF_NUMBERS, RANDOM_OUTPUT_PREFIX);
 }
 
 int main() {
 
-    int *optimisticArray = createOptimisticArray(AMOUNT_OF_NUMBERS);
-    //saveInputToFile(optimisticArray, AMOUNT_OF_NUMBERS, OPTIMISTIC_INPUT_PREFIX);
-    int *pessimisticArray = createPessimisticArray(AMOUNT_OF_NUMBERS);
-    //saveInputToFile(pessimisticArray, AMOUNT_OF_NUMBERS, PESSIMISTIC_INPUT_PREFIX);
+    int *ascendingSortedArray = createAscendingSortedArray(AMOUNT_OF_NUMBERS);
+    //saveInputToFile(ascendingSortedArray, AMOUNT_OF_NUMBERS, OPTIMISTIC_INPUT_PREFIX);
+    int *descendingSortedArray = createDescendingSortedArray(AMOUNT_OF_NUMBERS);
+    //saveInputToFile(descendingSortedArray, AMOUNT_OF_NUMBERS, PESSIMISTIC_INPUT_PREFIX);
     int *randomArray = createRandomArray(AMOUNT_OF_NUMBERS);
     //saveInputToFile(randomArray, AMOUNT_OF_NUMBERS, RANDOM_INPUT_PREFIX);
 
@@ -163,22 +156,22 @@ int main() {
     switch (pivotChoice) {
         case 1 :
             cout << "First element pivot results:" << endl;
-            execute(optimisticArray, pessimisticArray, randomArray, AMOUNT_OF_NUMBERS, FIRST_PIVOT);
+            execute(ascendingSortedArray, descendingSortedArray, randomArray, AMOUNT_OF_NUMBERS, FIRST_PIVOT);
             break;
         case 2 :
             cout << "Last element pivot results:" << endl;
-            execute(optimisticArray, pessimisticArray, randomArray, AMOUNT_OF_NUMBERS, LAST_PIVOT);
+            execute(ascendingSortedArray, descendingSortedArray, randomArray, AMOUNT_OF_NUMBERS, LAST_PIVOT);
             break;
         case 3 :
             cout << "Middle element pivot results:" << endl;
-            execute(optimisticArray, pessimisticArray, randomArray, AMOUNT_OF_NUMBERS, MID_PIVOT);
+            execute(ascendingSortedArray, descendingSortedArray, randomArray, AMOUNT_OF_NUMBERS, MID_PIVOT);
             break;
         default :
             cout << "Wrong choice!" << endl;
     }
 
-    delete[] optimisticArray;
-    delete[] pessimisticArray;
+    delete[] ascendingSortedArray;
+    delete[] descendingSortedArray;
     delete[] randomArray;
 
     return 0;
